@@ -26,18 +26,30 @@ local function UpdateCharacterProfessions()
                     maxRank = profMaxRank,
                     moxie = 0,
                     treasures = 0,
+                    treatise = 0,
                 }
                 
-                -- Count completed treasure map quests
+                -- Count completed treasure map quests (use helper)
                 local questCount = 0
-                if PR.Constants.TREASURE_MAP_QUESTS[profName] then
-                    for _, questID in pairs(PR.Constants.TREASURE_MAP_QUESTS[profName]) do
+                local profConst = PR.Constants.GetProfession(profName)
+                local treasureList = (profConst and profConst.treasureMapQuests) or nil
+                if treasureList then
+                    for _, questID in pairs(treasureList) do
                         if C_QuestLog.IsQuestFlaggedCompleted(questID) then
                             questCount = questCount + 1
                         end
                     end
                 end
                 data.professions[profName].treasures = questCount
+
+                local treatiseCount = 0
+                local treatiseQuestId = (profConst and profConst.treatise.questId) or nil
+                if treatiseQuestId then
+                    if C_QuestLog.IsQuestFlaggedCompleted(treatiseQuestId) then
+                        treatiseCount = 1
+                    end
+                end
+                data.professions[profName].treatise = treatiseCount
             end
         end
     end
@@ -46,11 +58,9 @@ local function UpdateCharacterProfessions()
 end
 
 PR.IsEpicToolEquipped = function(profName)
-    local tool = PR.Constants.EPIC_TOOLS[profName]
-    if not tool then
-        return false
-    end
-
+    local profConst = PR.Constants.GetProfession(profName)
+    local tool = profConst and profConst.epicTool
+    if not tool or not tool.id then return false end
     for _, slotID in ipairs({20, 23}) do
         local itemID = GetInventoryItemID("player", slotID)
         if itemID and tonumber(itemID) == tool.id then
@@ -62,7 +72,8 @@ end
 
 -- Returns a list of equipped epic accessory names for a profession
 PR.GetEpicAccessoriesEquipped = function(profName)
-    local accessories = PR.Constants.EPIC_ACCESSORIES[profName]
+    local profConst = PR.Constants.GetProfession(profName)
+    local accessories = profConst and profConst.epicAccessories
     if not accessories or type(accessories) ~= "table" then return {} end
 
     local equipped = {}
@@ -206,7 +217,8 @@ local function UpdateCurrencies()
     -- Update moxie for each profession
     if data.professions then
         for profName, profData in pairs(data.professions) do
-            local moxieID = PR.Constants.MOXIE_IDS[profName]
+            local profConst = PR.Constants.GetProfession(profName)
+            local moxieID = (profConst and profConst.moxieId) or nil
             if moxieID then
                 local moxieInfo = C_CurrencyInfo.GetCurrencyInfo(moxieID)
                 if moxieInfo then
