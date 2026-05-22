@@ -27,6 +27,9 @@ local function UpdateCharacterProfessions()
                     moxie = 0,
                     treasures = 0,
                     treatise = 0,
+                    toolEquipped = false,
+                    accessories = 0,
+                    concentration = 0,
                 }
                 
                 -- Count completed treasure map quests (use helper)
@@ -135,6 +138,34 @@ local function GetCurrencyInfoAny(currencyID, currencyName)
     return info
 end
 
+function PR.EstimateConcentration(amount, lastUpdated)
+    amount = tonumber(amount) or 0
+    lastUpdated = tonumber(lastUpdated) or time()
+    local elapsed = time() - lastUpdated
+    if elapsed < 0 then
+        elapsed = 0
+    end
+    local gained = math.floor(elapsed / 360)
+    return math.min(1000, amount + gained)
+end
+
+local function GetFirstSundayOfMonth(timeStamp)
+    local t = date("*t", timeStamp or time())
+    local year = t.year
+    local month = t.month
+    local firstDay = time({ year = year, month = month, day = 1, hour = 0 })
+    local weekday = tonumber(date("%w", firstDay)) or 0
+    local daysUntilSunday = (7 - weekday) % 7
+    return firstDay + (daysUntilSunday * 86400)
+end
+
+function PR.IsDarkmoonFaireActive()
+    local now = time()
+    local firstSunday = GetFirstSundayOfMonth(now)
+    local endTime = firstSunday + (7 * 86400)
+    return now >= firstSunday and now < endTime
+end
+
 local function ParseNumber(value)
     if type(value) == "number" then
         return value
@@ -224,6 +255,49 @@ local function UpdateCurrencies()
                 if moxieInfo then
                     profData.moxie = moxieInfo.quantity or 0
                 end
+            end
+
+            if profConst then
+                -- Epic tool state
+                profData.toolEquipped = false
+                local tool = profConst.epicTool
+                if tool and tool.id then
+                    for _, slotID in ipairs({20, 23}) do
+                        local itemID = GetInventoryItemID("player", slotID)
+                        if itemID and tonumber(itemID) == tool.id then
+                            profData.toolEquipped = true
+                            break
+                        end
+                    end
+                end
+
+                -- Epic accessory count
+                profData.accessories = 0
+                local accessories = profConst.epicAccessories
+                if accessories and type(accessories) == "table" then
+                    local accessoryIds = {}
+                    for _, acc in ipairs(accessories) do
+                        accessoryIds[tonumber(acc.id)] = true
+                    end
+                    for _, slotID in ipairs({21, 22, 24, 25}) do
+                        local itemID = GetInventoryItemID("player", slotID)
+                        if itemID and accessoryIds[tonumber(itemID)] then
+                            profData.accessories = profData.accessories + 1
+                        end
+                    end
+                end
+
+                -- Profession concentration currency amount
+                profData.concentration = 0
+                local concentrationId = (profConst.concentration and profConst.concentration.currencyId) or nil
+                if concentrationId and concentrationId > 0 then
+                    local concInfo = GetCurrencyInfoAny(concentrationId)
+                    profData.concentration = concInfo and concInfo.quantity or 0
+                end
+            else
+                profData.toolEquipped = false
+                profData.accessories = 0
+                profData.concentration = 0
             end
         end
     end

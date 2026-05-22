@@ -48,7 +48,7 @@ function PR.DB:GetCharacterData()
             shards = 0,
             abundance = 0,
             vitality = 0,
-            lastUpdated = GetTime(),
+            lastUpdated = time(),
         }
     end
     
@@ -58,7 +58,7 @@ end
 function PR.DB:SetCharacterData(data)
     self:Initialize()
     local key = self:GetCharacterKey()
-    data.lastUpdated = GetTime()
+    data.lastUpdated = time()
     ProfessionsReminderDB.characters[key] = data
 end
 
