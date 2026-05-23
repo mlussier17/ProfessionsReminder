@@ -184,6 +184,7 @@ local function ParseNumber(value)
 end
 
 local function GetShardCount(shardInfo)
+    -- Return how many shards the character has earned this week (capped at weekly max)
     if not shardInfo then
         return 0
     end
@@ -224,16 +225,39 @@ local function GetShardCount(shardInfo)
     end
 
     collected = tonumber(collected) or 0
-    return math.max(0, math.min(collected, 8))
+    return math.max(0, math.min(collected, PR.Constants.SHARD_OF_DUNDUN_WEEKLY_MAX or 8))
+end
+
+local function GetShardOwnedCount(shardInfo)
+    -- Return how many shards the character currently owns (in bags/currency)
+    if not shardInfo then return 0 end
+    local fields = { "currentQuantity", "currencyQuantity", "quantity", "current", "amount" }
+    for _, field in ipairs(fields) do
+        if shardInfo[field] ~= nil then
+            local parsed = ParseNumber(shardInfo[field])
+            if parsed ~= nil then
+                return tonumber(parsed) or 0
+            end
+        end
+    end
+    if shardInfo.quantity then
+        local q = ParseNumber(shardInfo.quantity)
+        return tonumber(q) or 0
+    end
+    return 0
 end
 
 local function UpdateCurrencies()
     local data = PR.DB:GetCharacterData()
     
-    -- Vibrant Shards (capped at 8 max per week)
+    -- Vibrant Shards: record both earned this week and currently owned
     local shardInfo = GetCurrencyInfoAny(PR.Constants.SHARD_OF_DUNDUN_ID, PR.Constants.SHARD_OF_DUNDUN_NAME)
     if shardInfo then
         data.shards = GetShardCount(shardInfo)
+        data.shardsOwned = GetShardOwnedCount(shardInfo)
+    else
+        data.shards = data.shards or 0
+        data.shardsOwned = data.shardsOwned or 0
     end
     
     -- Unalloyed Abundance
@@ -368,7 +392,8 @@ SlashCmdList["PROFESSIONSREMINDER"] = function(msg)
             for k, v in pairs(shardInfo) do
                 print("  " .. tostring(k) .. ": " .. tostring(v))
             end
-            print("|cff0070ddProfessions Reminder|r computed shards: " .. tostring(GetShardCount(shardInfo)))
+            print("|cff0070ddProfessions Reminder|r computed shards (this week): " .. tostring(GetShardCount(shardInfo)))
+            print("|cff0070ddProfessions Reminder|r owned shards: " .. tostring(GetShardOwnedCount(shardInfo)))
         else
             print("|cff0070ddProfessions Reminder|r: Shard info not found.")
         end

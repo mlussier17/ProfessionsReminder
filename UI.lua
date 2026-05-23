@@ -2,14 +2,17 @@ local addonName, PR = ...
 
 PR.UI = {}
 
+local frameWidth = 1200
+local scrollFrameWidth = frameWidth - 40
+
 -- Create main frame
 local f = CreateFrame("Frame", "ProfessionsReminderFrame", UIParent, "BasicFrameTemplate")
 PR.UI.MainFrame = f
-f:SetSize(1100, 520)
+f:SetSize(frameWidth, 520)
 f:SetPoint("CENTER")
 f:SetMovable(true)
 f:EnableMouse(true)
-f:SetFrameStrata("Medium")
+f:SetFrameStrata("HIGH")
 f:RegisterForDrag("LeftButton")
 f:SetScript("OnDragStart", f.StartMoving)
 f:SetScript("OnDragStop", f.StopMovingOrSizing)
@@ -27,7 +30,7 @@ scrollFrame:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -30, 10)
 
 -- Create content frame for scroll
 local contentFrame = CreateFrame("Frame")
-contentFrame:SetSize(1080, 100)
+contentFrame:SetSize(scrollFrameWidth, 100)
 scrollFrame:SetScrollChild(contentFrame)
 
 -- Header row
@@ -45,18 +48,18 @@ end
 local columnDefinitions = {
     {id = "name", label = "Character", width = 110},
     {id = "realm", label = "Realm", width = 90},
-    {id = "shards", label = "Shards", width = 60},
-    {id = "remaining", label = "Remain", width = 60},
-    {id = "abundance", label = "Abun", width = 60},
-    {id = "vitality", label = "Vit", width = 60},
+    {id = "shards", label = "Weekly Shards", width = 90},
+    {id = "remaining", label = "Shards Owned", width = 90},
+    {id = "abundance", label = "Unalloyed Abun", width = 90},
+    {id = "vitality", label = "Fused Vit", width = 60},
     {id = "prof1_name", label = "Profession", width = 120},
     {id = "prof1_moxie", label = "Moxie", width = 50},
     {id = "prof1_treasures", label = "Treasures", width = 70},
     {id = "prof1_tool", label = "Tool", width = 50},
-    {id = "prof1_acc", label = "Acc", width = 50},
+    {id = "prof1_acc", label = "Accessories", width = 50},
     {id = "prof1_treatise", label = "Treatise", width = 70},
-    {id = "prof1_concentration", label = "Conc", width = 70},
-    {id = "prof1_dm", label = "DM", width = 50},
+    {id = "prof1_concentration", label = "Concentration", width = 90},
+    {id = "prof1_dm", label = "Darkmoon", width = 50},
 }
 
 local function GetVisibleColumns()
@@ -80,74 +83,10 @@ end
 local function GetEffectiveVisibleColumns()
     local visible = GetVisibleColumns()
     if type(PR.IsDarkmoonFaireActive) == "function" and not PR.IsDarkmoonFaireActive() then
-        visible["prof1_dm"] = false
+        -- visible["prof1_dm"] = false
     end
     return visible
 end
-
--- local optionsFrame = CreateFrame("Frame", nil, f, "BackdropTemplate")
--- optionsFrame:SetSize(340, 220)
--- optionsFrame:SetPoint("TOPRIGHT", f, "TOPRIGHT", -10, -40)
--- optionsFrame:SetBackdrop({
---     bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
---     edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
---     edgeSize = 16,
---     insets = { left = 4, right = 4, top = 4, bottom = 4 },
--- })
--- optionsFrame:SetBackdropColor(0, 0, 0, 1)
--- optionsFrame:SetFrameStrata("DIALOG")
--- optionsFrame:SetClampedToScreen(true)
--- optionsFrame:Hide()
-
--- local optionsTitle = optionsFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
--- optionsTitle:SetPoint("TOPLEFT", optionsFrame, "TOPLEFT", 10, -10)
--- optionsTitle:SetText("Column Visibility")
-
--- local optionsClose = CreateFrame("Button", nil, optionsFrame, "UIPanelCloseButton")
--- optionsClose:SetPoint("TOPRIGHT", optionsFrame, "TOPRIGHT", -6, -6)
--- optionsClose:SetScript("OnClick", function()
---     optionsFrame:Hide()
--- end)
-
-local visibleColumnsOption = GetVisibleColumns()
-
--- for i, col in ipairs(columnDefinitions) do
---     local check = CreateFrame("CheckButton", nil, optionsFrame, "UICheckButtonTemplate")
---     local colOffset = ((i - 1) % 2) * 160
---     local rowOffset = math.floor((i - 1) / 2) * 24
---     check:SetPoint("TOPLEFT", optionsFrame, "TOPLEFT", 10 + colOffset, -30 - rowOffset)
---     check:SetSize(24, 24)
-
---     -- local checkText = optionsFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
---     -- checkText:SetPoint("LEFT", check, "RIGHT", 4, 1)
---     -- checkText:SetText(col.label)
-
---     check:SetChecked(visibleColumnsOption[col.id])
---     check:SetScript("OnClick", function(self)
---         visibleColumnsOption[col.id] = self:GetChecked()
---         PR.DB:SetOption("visibleColumns", visibleColumnsOption)
---         if PR.UI.RefreshDisplay then
---             PR.UI.RefreshDisplay()
---         end
---     end)
--- end
-
--- local optionsButton = CreateFrame("DropdownButton", nil, f)
--- optionsButton:SetSize(30, 30)
--- optionsButton:SetPoint("TOPRIGHT", f, "TOPRIGHT", -26, 0)
--- optionsButton:SetNormalTexture("Interface\\Buttons\\UI-Panel-Button-Up")
--- optionsButton:SetHighlightTexture("Interface\\Buttons\\UI-Panel-Button-Highlight")
--- optionsButton:SetPushedTexture("Interface\\Buttons\\UI-Panel-Button-Down")
-
--- local cogTexture = optionsButton:CreateTexture(nil, "ARTWORK")
--- cogTexture:SetAllPoints()
--- cogTexture:SetTexture("Interface/AddOns/ProfessionsReminder/Media/Icon_Settings.blp")
--- cogTexture:SetSize(16, 16)
--- cogTexture:SetVertexColor(0.7, 0.7, 0.7, 1)
-
--- optionsButton:SetScript("OnClick", function()
---     optionsFrame:SetShown(not optionsFrame:IsShown())
--- end)
 
 local function GetSortState()
     local field = PR.DB:GetOption("sortField") or "name"
@@ -227,7 +166,7 @@ function PR.UI:RefreshDisplay()
         elseif field == "shards" then
             return charData.shards or 0
         elseif field == "remaining" then
-            return PR.Constants.SHARD_OF_DUNDUN_WEEKLY_MAX - (charData.shards or 0)
+            return charData.shardsOwned or 0
         elseif field == "abundance" then
             return charData.abundance or 0
         elseif field == "vitality" then
@@ -298,7 +237,7 @@ function PR.UI:RefreshDisplay()
             btn:SetScript("OnClick", function()
                 SetSortState(col.id)
             end)
-            local txt = btn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+            local txt = btn:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
             txt:SetText(col.label)
             if col.id == "name" or col.id == "realm" or col.id == "prof1_name" then
                 txt:SetJustifyH("LEFT")
@@ -328,7 +267,7 @@ function PR.UI:RefreshDisplay()
         for profIndex = 1, 2 do
             local profName = profNames[profIndex]
             local charRow = CreateFrame("Frame", nil, contentFrame)
-            charRow:SetSize(1080, 18)
+            charRow:SetSize(scrollFrameWidth, 18)
             charRow:SetPoint("TOPLEFT", contentFrame, "TOPLEFT", 0, yOffset)
 
             local bg = charRow:CreateTexture(nil, "BACKGROUND")
@@ -346,7 +285,7 @@ function PR.UI:RefreshDisplay()
 
             local function addCell(text, width, justify)
                 local cell = CreateText(charRow, text, nil, nil, width)
-                cell:SetPoint("TOPLEFT", charRow, "TOPLEFT", xPos, -2)
+                cell:SetPoint("LEFT", charRow, "LEFT", xPos, -2)
                 cell:SetJustifyH(justify or "CENTER")
                 xPos = xPos + width + 5
             end
@@ -358,7 +297,7 @@ function PR.UI:RefreshDisplay()
                             local charLabel = charData.name or "Unknown"
                             local classColor = RAID_CLASS_COLORS[charData.class] or {r = 1, g = 1, b = 1}
                             local nameText = CreateText(charRow, charLabel, nil, true, col.width)
-                            nameText:SetPoint("TOPLEFT", charRow, "TOPLEFT", xPos, -2)
+                            nameText:SetPoint("LEFT", charRow, "LEFT", xPos, -2)
                             nameText:SetJustifyH("LEFT")
                             nameText:SetTextColor(classColor.r, classColor.g, classColor.b)
                         end
@@ -372,16 +311,16 @@ function PR.UI:RefreshDisplay()
                     elseif col.id == "shards" then
                         if profIndex == 1 then
                             local shardCount = charData.shards or 0
-                            local shardColor = shardCount >= 8 and "|cff00ff00" or "|c82828200"
-                            addCell(shardColor .. tostring(shardCount) .. "|r", col.width)
+                            local shardColor = shardCount >= (PR.Constants.SHARD_OF_DUNDUN_WEEKLY_MAX or 8) and "|cff00ff00" or "|c82828200"
+                            addCell(shardColor .. tostring(shardCount) .. "/" ..(PR.Constants.SHARD_OF_DUNDUN_WEEKLY_MAX) .. "|r", col.width)
                         else
                             xPos = xPos + col.width + 5
                         end
                     elseif col.id == "remaining" then
                         if profIndex == 1 then
-                            local shardRemaining = math.max(0, PR.Constants.SHARD_OF_DUNDUN_WEEKLY_MAX - (charData.shards or 0))
-                            local shardRemainingColor = shardRemaining < 1 and "|c82828200" or "|cff00ff00"
-                            addCell(shardRemainingColor .. tostring(shardRemaining) .. "|r", col.width)
+                            local owned = charData.shardsOwned or 0
+                            local ownedColor = owned > 0 and "|cff00ff00" or "|c82828200"
+                            addCell(ownedColor .. tostring(owned) .. "/" ..(PR.Constants.SHARD_OF_DUNDUN_WEEKLY_MAX) .. "|r", col.width)
                         else
                             xPos = xPos + col.width + 5
                         end
@@ -413,7 +352,7 @@ function PR.UI:RefreshDisplay()
                         addCell(moxieColor .. tostring(profData and profData.moxie or 0) .. "|r", col.width)
                     elseif col.id == "prof1_treasures" then
                         local treasuresColor = (profData and profData.treasures or 0) >= 2 and "|cff00ff00" or "|c82828200"
-                        addCell(treasuresColor .. tostring(profData and profData.treasures or 0) .. "|r", col.width)
+                        addCell(treasuresColor .. tostring(profData and profData.treasures or 0) .. "/" .. (PR.Constants.TREASURES_MAX) .. "|r", col.width)
                     elseif col.id == "prof1_tool" then
                         local toolEquipped = profData and profData.toolEquipped
                         local toolColor = toolEquipped and "|cff00ff00" or "|c82828200"
@@ -421,14 +360,18 @@ function PR.UI:RefreshDisplay()
                     elseif col.id == "prof1_acc" then
                         local accCount = profData and profData.accessories or 0
                         local accColor = accCount >= 2 and "|cff00ff00" or "|c82828200"
-                        addCell(accColor .. tostring(accCount) .. "|r", col.width)
+                        addCell(accColor .. tostring(accCount) .. "|r", col.width)cal
                     elseif col.id == "prof1_dm" then
                         local dmQuest = profInfo and profInfo.darkmoon
-                        local dmCompleted = dmQuest and C_QuestLog.IsQuestFlaggedCompleted(dmQuest.questId) and "Done" or "Open"
-                        addCell(dmCompleted, col.width)
+                        if PR.IsDarkmoonFaireActive() then
+                            local dmColor = (dmQuest and C_QuestLog.IsQuestFlaggedCompleted(dmQuest.questId)) and "|cff00ff00" or "|c82828200"
+                            addCell(dmColor .. (dmQuest and C_QuestLog.IsQuestFlaggedCompleted(dmQuest.questId) and "Done" or "Open") .. "|r", col.width)
+                        else
+                            addCell("|c82828200Closed|r", col.width)
+                        end
                     elseif col.id == "prof1_treatise" then
                         local treatiseColor = (profData and profData.treatise or 0) >= 1 and "|cff00ff00" or "|c82828200"
-                        addCell(treatiseColor .. tostring(profData and profData.treatise or 0) .. "|r", col.width)
+                        addCell(treatiseColor .. tostring(profData and profData.treatise or 0) .. "/" .. (PR.Constants.TREATISE_MAX) .. "|r", col.width)
                     elseif col.id == "prof1_concentration" then
                         local concentrationValue = profData and profData.concentration or 0
                         if profData and profData.concentration then

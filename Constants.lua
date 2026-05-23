@@ -9,6 +9,8 @@ PR.Constants.SHARD_OF_DUNDUN_NAME = "Shard of Dundun"
 PR.Constants.SHARD_OF_DUNDUN_WEEKLY_MAX = 8
 PR.Constants.UNALLOYED_ABUNDANCE_ID = 3377
 PR.Constants.FUSED_VITALITY_ID = 245345
+PR.Constants.TREATISE_MAX = 1
+PR.Constants.TREASURES_MAX = 2
 
 -- Unified profession data
 PR.Constants.PROFESSIONS = {
